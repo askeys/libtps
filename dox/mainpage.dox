@@ -1,0 +1,32 @@
+/** \mainpage Transition Path Sampling (TPS) library Documentation
+
+\image html "../resources/libtps.png"
+
+\section intro_sec Introduction 
+LibTPS is a software library that can be used to perform transition path 
+sampling and related methods with an arbitrary molecular simulation code.   
+Our primary goal is to bring path sampling techniques to a wider audience, 
+for whom the time required to code a path sampling algorithm poses a 
+significant barrier to using the methods.  A secondary aim of LibTPS is to 
+provide a collaborative development environment for researchers working on 
+path sampling techniques to test and disseminate new path sampling algorithms.
+
+More information regarding the project can be found here:
+- \subpage status
+- \subpage outlook
+- \subpage developers
+
+\section compiling_sec Using the Code
+LibTPS currently works with C/C++, python and Java.  For specific instructions
+regarding how to install LibTPS for your platform, see:
+- \ref compiling
+
+To get a feel for the capabilities of the library, how it is organized, and how
+to write a code using the library, see:
+- \ref walkthroughs
+- \ref examples
+
+\section References
+- \ref references
+
+*/

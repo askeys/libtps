@@ -1,0 +1,1 @@
+The test suite defines some standard simulations / order parameters, etc. that can be used to test new path sampling algorithms.

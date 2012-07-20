@@ -1,0 +1,45 @@
+
+/** \page walkthroughs Demos and Walkthroughs
+
+\section ex_demos Demos
+The demos can be a good starting point for getting a big-picture understanding
+of how the code works.
+	- \subpage demo_pefield1
+		- Using the test systems
+		- Building a path sampling scheme
+		- Running a working LibTPS code
+	- \subpage demo_pefield2
+		- Adding data analysis
+		- Computing the committer
+	- \subpage demo_pefield3
+		- Computing the transition states
+		- Changing the path sampling algorithm (Aimless shooting) 
+	- \subpage demo_diatomic1
+		- Using LAMMPS
+		- Customizing output
+	- \subpage demo_diatomic2
+		- Building a learning module
+		- Using a GUI (python)
+		
+\section ex_partial Specific Demos
+	- \subpage example_customsim
+	- \subpage example_customop
+	- \subpage example_customgeneral
+
+\section ex_full Full Walkthroughs
+The examples in this section combine the parts from the examples in the previous
+section to show all of the modifications working at once.  We give a long, 
+thorough description of each step.
+	- \subpage example_pefield1
+		- Setting up a TPS algorithm
+		- Using the TestSystems
+	
+	- \subpage example_pefield2 
+		- Defining a custom Order Parameter
+		- Defining a custom simulation code
+			
+	- \subpage example_diatomic
+		- Defining a custom Order Parameter
+		- Using a LAMMPS simulation code
+		
+*/

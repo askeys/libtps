@@ -1,0 +1,149 @@
+/**
+\page demo_pefield2 Demo: Particle in a Potential Field 2
+
+\section demo2_sec1 Background
+
+Often we are interested in analysing the transition paths.  The simplest type of
+analysis that we can perform is to show the transition paths visually.  
+Another important analysis that we might perform is to determine the committer.
+Yet another important analysis that we can perform is to identify the transition
+states.
+
+\section demo1_sec2 Example Code
+
+\code
+#include <tps/tps.h>
+#include <tps/TestSystems/TpsTestPeSurf2dBD.h>
+#include <tps/TestSystems/TpsTestPeSurf2dOrderParam.h>
+
+#include <iostream>
+using namespace std;
+
+//custom writer:
+class TpsAnalysisWriteXY : public TpsAnalysis
+{
+	public:
+		void analyze(TpsTrajectory& traj)
+		{
+			if (traj.getID() % 100 != 0) {
+				return;
+			}
+			TpsDataAtomicPositions x_data; 
+			int n = traj.getNumberOfTimeslices();
+			ostringstream filename;
+			filename << "traj" << traj.getID() << ".txt";
+			ofstream os(filename.str().c_str());
+			
+			for (int i=0; i<n; i++) {
+				getData(traj, i, x_data);
+				vector< vector<double> >& x = x_data.getPositions();
+				os << x[0][0] <<"\t" << x[0][1] << "\n";
+			}
+			os.close();
+		}
+};
+
+int main()
+{
+	//set up the simulation:
+	TpsTestPeSurf2dBD sim;
+	sim.setTemperature(1.0/2.0);
+	sim.setDragCoefficient(2.5);
+	sim.setTimestep(0.25);
+	sim.setParticlePosition(-1, 0);
+	
+	TpsRNG48 rng(10, 7, 13);
+	
+	TpsOrderParameterXPosition xpos;
+	TpsOrderParameterYPosition ypos;
+	TpsOrderParameterAggregate xypos;
+	xypos.addOrderParameter(xpos);
+	xypos.addOrderParameter(ypos);
+	
+	TpsInitializerBruteForce init;
+	TpsTrajectoryUniformStep trj(sim, 100, 1);
+	TpsTrajectoryEnsemble tpe(trj);
+
+	TpsAlgorithmTPS tps(tpe, rng, xypos, init);
+
+	TpsTrialMoveShotForward fshot;
+	TpsTrialMoveShotBackward bshot;
+	TpsTrialMoveShift shift(1, 99);	
+	tps.addTrialMove(fshot);
+	tps.addTrialMove(bshot);
+	tps.addTrialMove(shift);
+	
+
+	//TpsAnalysisAtomicWriteXYZ writer("traj%.xyz");
+	//TpsExtraAnalyzeTrajectory a(writer);
+	//tps.addExtra(a);
+
+	TpsExtraOptimizeStepSize opt(shift, 0.5);
+	//tps.addExtra(opt);
+
+	for (int i=0; i<200; i++) {
+		tps.doStep();
+	}
+
+	sim.setTemperature(1.0/3.0);
+
+	for (int i=0; i<500; i++) {
+		tps.doStep();
+	}
+	
+	sim.setTemperature(1.0/5.0);
+
+	for (int i=0; i<1000; i++) {
+		tps.doStep();
+	}
+	
+	sim.setTemperature(1.0/8.0);
+
+	for (int i=0; i<3000; i++) {
+		tps.doStep();
+	}
+	
+	tpe.eraseTrajectories(0, tpe.getLastTrajectory().getID()-1);
+	
+	for (int i=0; i<10000; i++) {
+		tps.doStep();
+	}
+	
+	//write members of the TPE:
+	TpsAnalysisWriteXY writer;
+	writer.analyzeEnsemble(tpe);
+	
+	//analyze the committer as a function of the aggregate order parameter:
+	TpsTimesliceModifierAtomicNVT vdist(rng);
+	TpsAnalysisCommitter pB(xypos, vdist, 100, "committer.txt", 1);
+	pB.setBinSize(0.025);
+	pB.analyzeEnsemble(tpe, 10);
+	
+	//find the transition states and print them
+	TpsAnalysisTransitionStates tse(pB, 2);
+	tse.analyzeEnsemble(tpe, tpe.getNumberOfTrajectories()/500);
+	vector<TpsTimeslice>& tse_micro = tse.getTransitionStates();
+	//make a "trajectory" out of the transition states to print them (a hack)
+	TpsTrajectory temp_trajectory(sim);
+	for (int i=0; i<tse_micro.size(); i++) {
+		temp_trajectory.pushBack(tse_micro[i]);
+	}
+	writer.analyze(temp_trajectory);
+}
+\endcode
+
+The results for this code are given below:
+
+\image html "../resources/pefieldpb.jpg"
+
+The image shows the committer as a function of the aggregate order parameter
+xypos.  Each sub-order parameter making up the aggreage represents a 
+different dimension on the multidimensional committer.
+
+\image html "../resources/pefieldtse.jpg"
+
+The image shows the trajectories (lines), together with the transition states 
+(black circles).
+
+
+*/

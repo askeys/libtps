@@ -1,0 +1,81 @@
+/**
+\page design Code Design
+
+\section des_sec Desired Attributes
+
+- Object-Oriented
+- Logical Class Names
+- Objects store references rather than copies
+- References over pointers
+- All member data is private
+- Explicit constructors
+- Encapsulation over inheritance
+
+
+\section oo_sec Object Oriented
+
+We don't use a procedural interface for the TPSAPI because TPS requires that
+we mix and match many different peices that are much more easily organized as
+classes with abstract interfaces than functions.
+
+\section classname_sec Class Names
+
+Class names are meant to be clear and represent their function.  All classes
+begin with the letters "Tps." Derived classes retain their base class name as 
+a root, for example:
+
+\code
+class TpsTrajectoryUniformStep: public TpsTrajectory
+{
+	...
+};
+\endcode
+
+\section reference_sec References
+
+We aim to create a Java-like API where no pointers are ever passed as part of
+the interface.  Rather, all objects are passed by reference.
+
+\code
+class TpsTrajectory
+{
+	public:
+		TpsTrajectory(TpsSimulationPlugin&, int=-1, int=-1);
+		...
+	protected:
+		...
+		TpsSimulationPlugin& _sim;
+		
+};
+\endcode
+
+Now the class TpsTrajectory contains a reference to a specific instance of a 
+TpsSimulationPlugin.  Any changes made to the simulation will apply to the
+trajectory.  
+
+\section constructor_sec Explicit Constructors
+
+All classes should take everything that they need during construction.  They 
+should contain "set" functions so that these settings can be modified later.
+\code
+class TpsTrajectory
+{
+	public:
+		TpsTrajectory(TpsSimulationPlugin&, int min=-1, int max=-1);
+		void setSimulationPlugin(TpsSimulationPlugin&);
+		void setMin(int);
+		void setMax(int);
+		...
+	protected:
+		...
+		TpsSimulationPlugin& _sim;
+		
+};
+\endcode
+
+Constructors should take default arguments so that they don't become long and 
+unweildly.
+
+
+
+*/

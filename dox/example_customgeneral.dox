@@ -1,0 +1,83 @@
+
+/**
+\page example_customgeneral Generalizing an Add-On
+
+One interesting subtlety of adding custom routines to LibTPS is how do we 
+generalize our add-on to work generally within the API.  
+
+\section example_customgeneral1 General Method:
+
+Consider the following example of a custom data writer that writes the x and y 
+positions for the single-particle in a 2D potential example system that we 
+frequently use:
+
+\code
+class TpsAnalysisWriteXY : public TpsAnalysis
+{
+	public:
+		void analyze(TpsTrajectory& traj)
+		{
+			//get a reference to the simulation code
+			TpsSimulationPlugin& sim = traj.getSimulationPlugin();
+			//assume our simulation plugin is of type "TpsTestPeSurf2dBD" in this case
+			TpsTestPeSurf2dBD& sim_bd = dynamic_cast<TpsTestPeSurf2dBD&>(sim);
+						
+			int n = traj.getNumberOfTimeslices();
+			//c++ specific way to create a filename / write to a file:
+			ostringstream filename;
+			filename << "traj" << traj.getID() << ".txt";
+			ofstream os(filename.str().c_str());
+			
+			for (int i=0; i<n; i++) {
+				//now that we have a reference to the simulation, just get
+				//the coordinates however you normally would.  For this 
+				//specific simulation, we would call "getCurrentTimeslice"
+				//and then use the timeslice struct to get the positions
+				TpsTestPeSurf2dBD::Timeslice& m = sim_bd.getCurrentTimeslice();				
+				os << m.x[0] <<"\t" << m.x[1] << "\n";
+			}
+			os.close();
+		}
+};
+
+\endcode
+
+Since we call methods that are specific to our simulation code, this order
+parameter will only work for that specific code.
+
+\section example_customgeneral1 General Method:
+
+To write a general version of the order parameter described above, we can use 
+the TpsData interface to set/get data in a general way.
+
+\code
+class TpsAnalysisWriteXY : public TpsAnalysis
+{
+	public:
+		void analyze(TpsTrajectory& traj)
+		{
+			TpsDataAtomicPositions x_data; 
+			int n = traj.getNumberOfTimeslices();
+			ostringstream filename;
+			filename << "traj" << traj.getID() << ".txt";
+			ofstream os(filename.str().c_str());
+			
+			for (int i=0; i<n; i++) {
+				//the "getData" method is defined for a variety of datatypes.
+				//since the third argument is of type TpsDataAtomicPositions,
+				//the function knows what type of data to return.  Some types of
+				//data are not defined; therefore to access them in this way one
+				//would have to write a "getData" method for this data type.
+				getData(traj, i, x_data);
+				vector< vector<double> >& x = x_data.getPositions();
+				os << x[0][0] <<"\t" << x[0][1] << "\n";
+			}
+			os.close();
+		}
+};
+
+\endcode
+
+
+
+*/

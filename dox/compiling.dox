@@ -1,0 +1,108 @@
+/**
+\page compiling Compiling/Linking/Running
+
+\section comp_sec Compiling Using CMake
+
+LibTPS uses CMake for cross-platform builds.  
+
+Before Compiling:
+-# If you do not already have it, download and install subversion 
+    (http://subversion.tigris.org/).  To check if subversion is installed, try
+\code
+$ svn --version
+\endcode    
+-# Download the libtps source via 
+\code
+$ mkdir tpslib
+$ subversion: svn checkout svn+ssh://$(whoami)@matforge.org/usr/local/svn-mol_sim_api-repos/trunk tpslib
+\endcode
+-# If you do not already have it, download and install CMake 
+    (http://www.cmake.org/cmake/resources/software.html)
+Compiling and Installing:
+-# Change to the directory in which you want to build libtps
+-# run CMake (how you do this depends on how you installed CMake) 
+\code
+$ mkdir tps-build
+$ cd tps-build
+$ cmake ${PATH_TO_TPS_SOURCE_DIR}
+$ make
+$ make install
+\endcode
+Note that ${PATH_TO_TPS_SOURCE_DIR} represents the directory containing the 
+source code downloaded via subversion in the previous step.
+By default, the library installs to /usr/local.  Therefore, you may need admin
+priveleges for the final "make install" step above.  An alternative is to change
+the install location:
+\code
+$ cmake ${PATH_TO_TPS_SOURCE_DIR} --CMAKE_INSTALL_PREFIX={MY_INSTALL_DIR}
+\endcode
+If you want to further customize your installation, there are several options: 
+	- Option 1: Run the CMake Application from your Applications or Programs 
+        folder
+	- Option 2 On (*nix) you can launch the GUI from the command line:
+\code
+$ cmake-gui 
+\endcode
+	- Option 3 (*nix): curses GUI from the command line:
+\code
+$ ccmake path/to/libtps/main/source/directory
+\endcode
+
+All of these methods allow for the configuration of available options in a GUI.
+Configure the options in CMake and then compile and install the library. 
+
+\section cpp_sec Linking with C/C++
+
+To use libtps with a C/C++ code first include the libtps header file somewhere
+in the code.
+
+\code
+//example.cpp
+#include <tps/tps.h>
+\endcode
+
+Then to compile, we use a command something like the following: 
+\code
+$ c++ example.cpp -ltps
+\endcode
+
+This assumes that we have used the default install location /usr/local/.  If 
+we specify an install location, we would use a command more like the following:
+\code
+$ c++ example.cpp -I/my/path/include -L/my/path/lib -ltps
+\endcode
+Here, -I specifies a path in which to look for header files and -L specifies a
+path in which to look for libraries.
+
+Sometimes we need to link with the underlying simulation wrapper.  For example,
+to use LibTPS with LAMMPS, we would use a command like the following
+\code
+$ mpic++ example.cpp -ltps -llammps
+\endcode
+Here, we assume that the name of the LAMMPS library is "lammps" and that 
+libtps.a and liblammps.a live in a globa library search path like /usr/local/lib.
+
+
+
+
+\section python_sec Linking with Python
+To use LibTPS from python include a line like:
+\code
+from tps import *
+\endcode
+
+Before Python can find the tps module, you must do one of two things:
+- Option 1: install the module files (tps.py tps.pyc _tps.so from {TPS_BUILD_DIR}/lib) in a 
+global python search path (example /Library/Python/2.5/site-packages on OS X). 
+- Option 2: set the PYTHONPATH variable.  See the scripts in the {TPS_BUILD_DIR}/bin folder 
+for help setting the variable.  You can set the python path variable by running the
+scripts before you start python.  This can also be automated.  For example, 
+in OS X, you can tell bash to automatically run the script by using adding the command
+\code
+$ source path/to/tps/bin/pythonpath.sh
+\endcode
+to the .bash_profile file in your home directory.
+    
+*/
+
+

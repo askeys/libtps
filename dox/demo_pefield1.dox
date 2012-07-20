@@ -1,0 +1,93 @@
+
+/**
+\page demo_pefield1 Demo: Particle in a Potential Field 1
+
+\section demo1_sec1 Background
+
+Often, when we test path sampling algorithms we first turn to simple model 
+systems to verify our code.  The advantage here is that we get instant feedback 
+regarding possible errors/inefficiencies with the algorithm.  Since we implement
+the algorithms in the context of the Transition Path Sampling library, they 
+don't need to be changed to work with a "real" system.  
+
+One useful example system is given by a single particle rolling in a 2D 
+potential landscape.  The landscape contains two wells, and the particle must 
+cross an energy barrier to move between the wells. 
+
+\image html "../resources/pefield.jpg"
+
+
+The image depict the single particle (red) in a 2D potential field, drawn as 
+contour lines.  The particle must overcome an energy barrier to move between 
+stable states.
+
+\section demo1_sec2 Example Code
+
+LibTPS this system as well as a few others as "example systems."  We have 
+implemented this system as a simple test case for Langevin dynamics, 
+Microcanonical molecular dynamics, and Monte-Carlo.  Most of the source code is 
+derived from an old tutorial program by Peter Bolhuis 
+(http://www.science.uva.nl/~bolhuis/tps/tutorial.html).  
+A description of the tutorial can be found here: 
+http://www.science.uva.nl/~bolhuis/tps/content/exercise.pdf.
+
+In the following code, we set up the the a path sampling scheme and run TPS for 
+200 cycles.  The code doesn't do much yet, but it shows a minimal example of 
+how we use the library.  Note that you can click on the links in the code to 
+go to a description of each class.
+
+\code
+#include <tps/tps.h>
+#include <tps/TestSystems/TpsTestPeSurf2dBD.h>
+#include <tps/TestSystems/TpsTestPeSurf2dOrderParam.h>
+
+#include <iostream>
+using namespace std;
+
+int main()
+{
+	//set up the simulation:
+	TpsTestPeSurf2dBD sim;
+	sim.setTemperature(1.0/2.0);
+	sim.setDragCoefficient(2.5);
+	sim.setTimestep(0.25);
+	sim.setParticlePosition(-1, 0);
+	
+	//random number generator:
+	TpsRNG48 rng(10, 7, 13);
+	
+	//set up the order parameter:
+	TpsTestPeSurf2dOrderParam op;
+	//define the stable states: x, y, stdevx, stdevy
+	op.addStableState(-1.03528, -0.0417531, 2*0.177083, 2*0.149455);
+	op.addStableState(1.0026, 0.118493, 2*0.191586, 2*0.167281);
+	
+	//set up an initializer (determines how to make the first trajectory)
+	TpsInitializerBruteForce init;
+	//define the type of trajectory to use 
+	TpsTrajectoryUniformStep trj(sim, 100, 1);
+	TpsTrajectoryEnsemble tpe(trj);
+
+	//set up the path sampling scheme:
+	TpsAlgorithmTPS tps(tpe, rng, op, init);
+	
+	//define / add some trial moves:
+	TpsTrialMoveShotForward fshot;
+	TpsTrialMoveShotBackward bshot;
+	TpsTrialMoveShift shift(1, 99);
+	
+	tps.addTrialMove(fshot);
+	tps.addTrialMove(bshot);	
+	tps.addTrialMove(shift);
+	
+	//run the simulation:
+	for (int i=0; i<200; i++) {
+		tps.doStep();
+	}
+}
+\endcode
+
+To compile the code, follow the instructions on the main page "compiling"
+section.
+
+*/

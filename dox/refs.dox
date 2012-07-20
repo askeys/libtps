@@ -1,0 +1,43 @@
+/**
+\page references References
+
+TPS:
+	-# Bolhuis, P.G., D. Chandler, C. Dellago, and P.L. Geissler, Transition path sampling: Throwing ropes over rough mountain passes, in the dark. Annual Review of Physical Chemistry, 2002. 53: p. 291-318.
+	-# Dellago, C., P.G. Bolhuis and P.L. Geissler, Transition Path Sampling, Adv. Chem. Phys. 123, 1-78, 2002. 
+	-# Crooks, G. E. and D. Chandler, "Efficient transition path sampling for nonequilibirum stochastic dynamics," Phys. Rev. E 64, 026109. 1- 026109. 4 (2001).
+	-# Dellago, C., P.G. Bolhuis, F.S. Csajka, and D. Chandler, Transition path sampling and the calculation of rate constants. J. Chem. Phys., 1998. 108(5): p. 1964-1977.
+	-# Bolhuis, P.G., C. Dellago, and D. Chandler, Sampling ensembles of deterministic transition pathways. Faraday Discussions, 1998(110): p. 421-436.
+
+TIS:
+	-# Van Erp, T.S. and Bolhuis, P.G., “Elaborating Transition Interface Sampling Methods.” J. Computational Phys. 205 (2005) 157-181.
+
+FFS:
+	-# Allen, R.J., Warren, P.B., and ten Wolde, P.R., “Sampling Rare Events in Biochemical Networks.”  PRL 94, 018104 (2005). 
+
+Aimless Shooting:
+	-# Peters, B., Trout B.L., Obtaining reaction coordinates by likelihood maximization, J. Chem. Phys. 125, 054108 (2006)
+	-# Peters, B., Beckham G.T., Trout B.L., Extensions to the likelihood maximization approach for finding reaction coordinates, J. Chem. Phys. 127, 034109 (2007)
+
+Some example applications:
+	-# M.F. Hagen and D. Chandler, Dynamic pathways for viral capsid assembly, cond-mat: arXiv:q-bio.BM/0511006v1 7 Nov 2005.
+	-# P.G. Bolhuis, “Transition-path sampling of beta hairpin folding” Proc. Nat. Acad. Sci. USA 100: 12129-12134 (2003).
+	-# Geissler, P. L., C. Dellago, D. Chandler, J. Hutter and M. Parrinello, "Autoionization in liquid water," Science 291, 2121-2124 (2001).
+	-# D. Zahn “Atomistic Mechanism of NaCl Nucleation From an Aqueous Solution”Phys. Rev. Lett. 92, 040801 (2004)
+	-# R.A. Kuharski, J.S. Bader, D. Chandler, M. Sprik, M.L. Klein and R.W. Impey, "Molecular model for aqueous Ferrous-Ferric electron transfer," J. Chem. Phys. 89, 3248-3257 (1988). 
+	-# M. Marchi, J.N. Gehlen, D. Chandler and M. Newton, "Diabatic surfaces and the pathway for primary electron transfer in a photosynthetic reaction center," J. Am. Chem. Soc. 115, 4178-4190 (1993).
+	
+Useful links:
+	-# TPS reference 1: http://arjournals.annualreviews.org/doi/abs/10.1146/annurev.physchem.53.082301.113146
+	-# TPS reference 2: http://www.science.uva.nl/~bolhuis/tps/pdf/article.pdf
+	-# TIS reference 1: http://arxiv.org/abs/cond-mat/0405116
+	-# FFS reference 1: http://arxiv.org/abs/cond-mat/0602269
+
+Link to Chandler group website: http://gold.cchem.berkeley.edu/research_path.html
+
+Notes:
+Unless otherwise indicated, the images shown on this site are from TPS 
+reference #1 below, by Pieter Bolhuis, et al.
+*/
+
+
+

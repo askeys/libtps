@@ -1,0 +1,374 @@
+/**
+\page example_diatomic Diatomic Molecule
+
+\section diatomic_dbl_well The Double Well Potential
+
+This example covers a prototypical path sampling problem in which we have a 
+system of hard particles, two of which interact via a double-well potential:
+\image html "double_well.jpg"
+Clearly, the two particles interacting via the double well will tend to choose
+one of two equivalent distances at the minimum of the potential.  At 
+sufficiently low temperature, the system switches rarely between the stable 
+states.  Suppose the rare switching mechanism is the event of interest for
+this system.
+
+In general, most path-sampling problems are similar.  The two main variables
+between different TPS applications are 1) the system used and 2) the order 
+parameter used to define the stable states.  We cover each of these steps
+in detail in the following two sections.
+
+\section diatomic_lmp_plugin LAMMPS Plugin
+
+To define a different system, we must define a custom "TpsSimulationPlugin."  
+This is somewhat complicated, so for this example, we use the pre-defined 
+LAMMPS plugin, which exists within the TPS library.  We can create many 
+different MD simulations in LAMMPS by reading an input script.  Here is the 
+script that we use to create the diatomic system:
+
+\verbatim
+#WCA fluid + double-well diatomic atom
+echo none
+log none
+units           lj
+atom_style      atomic
+atom_modify     map array
+dimension       2
+
+lattice         hex 0.6
+region          subbox block -20 20 -18 20 -0.5 0.5 units box
+region          box block -20 20 -20 20 -0.5 0.5 units box
+create_box      2 box
+create_atoms    1 single 0 -19. 0 units box
+create_atoms    1 single 1.23 -19. 0 units box
+create_atoms    2 region subbox
+
+mass            1 1.0
+mass            2 1.0
+
+velocity        all create 0.5 87287 loop geom
+
+#Note: must define the ".table" files before this will work:
+#In the double_well example folder, run make_tables.cpp first
+
+pair_style	table linear 10000
+pair_coeff	1 1 double_well.table double_well 2.1
+pair_coeff	2 2 wca.table wca 1.12246205
+pair_coeff	1 2 wca.table wca 1.12246205
+
+neighbor        0.3 multi
+neigh_modify    delay 0 every 20 check yes
+
+timestep		0.001
+fix             5 all enforce2d
+fix             4 all deform 100 x final -18.5 18.5 y final -18.5 18.5 units box
+
+fix		1 all nve
+fix		2 all momentum 1 linear 1 1 1
+fix		3 all temp/rescale 100 0.5 1.5 0.02 0.5
+	
+run		10000
+unfix		3
+unfix		4
+
+run		10000
+\endverbatim
+
+See the LAMMPS documentation page (http://lammps.sandia.gov/doc/Manual.html) for 
+more information regarding setting up simulations in LAMMPS.  Of course, this 
+is just an example of how to import a custom simulation code into our TPS scheme.  
+To learn how to define a custom  simulation (for example, your own personal 
+code), see this example: [link].  
+
+\section diatomic_op Defining an Order Parameter
+
+We define a custom order parameter by deriving 
+from the TpsOrderParameter base class and defining the two functions that it 
+needs: hA and hB.  Here, the two functions return true or false based on the 
+distance between the two atoms in the diatomic molecule.
+
+Below is a C++ example demonstrating how to perform TPS to selectively
+simulate this rare event:
+
+\code
+//tps.h is the name of the header file for the library
+#include <tps.h>
+#include <cmath>
+#include <iostream>
+using namespace std;
+
+//Define a class that derived from TpsOrderParameter 
+class TpsOrderParameterDiatomicBondLength : public TpsOrderParameter
+{
+	public:	
+		//We must define the hA and hB functions so that the TpsAlgorithm
+		//knows whether the system is in stable state A or stable state B:
+		
+		bool hA(TpsTrajectory& traj)
+		{
+			double rsq = computeValue(traj, 0);
+			if (rsq < 1.27*1.27) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		bool hB(TpsTrajectory& traj)
+		{
+			int last_timeslice = traj.getNumberOfTimeslices()-1;
+			double rsq = computeValue(traj, last_timeslice);
+			if (rsq > 1.47*1.47) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		//This is a function to get the distance between the diatomic atoms
+		//If we name the function "evaluate," some analysis classes can use
+		//the value returned by this function to analyze the order parameter
+		double evaluate(TpsTrajectory& traj, int timeslice_number)
+		{
+			TpsDataAtomicPositions x_data; 
+			getData(traj, timeslice_number, x_data);
+			TpsDataAtomicBoundary boundary_data;
+			getData(traj, timeslice_number, boundary_data);
+			
+			std::vector< std::vector<double> >& x = x_data.getPositions();
+			std::vector<double>& period = boundary_data.getPeriod();
+			std::vector<bool>& periodic = boundary_data.getPeriodicity();
+
+			double rsq = 0.0;
+			int dim = x[0].size();
+			for (unsigned int k=0; k<dim; k++) {
+				double dx = x[0][k] - x[1][k];
+				if (periodic[k]) {
+					dx -= period[k]*rint(dx/period[k]);
+				}
+				rsq += dx*dx;
+			}
+			return rsq;
+		}		
+};
+\endcode
+
+
+\section diatomic_cpp Final Version of the Code
+
+Here is a main code to run the example, including the order parameter that we
+defined above.
+
+\code
+//tps.h is the name of the header file for the library
+#include <tps.h>
+#include <cmath>
+#include <iostream>
+using namespace std;
+
+//Define a class that derived from TpsOrderParameter 
+class TpsOrderParameterDiatomicBondLength : public TpsOrderParameter
+{
+	public:	
+		//We must define the hA and hB functions so that the TpsAlgorithm
+		//knows whether the system is in stable state A or stable state B:
+		
+		bool hA(TpsTrajectory& traj)
+		{
+			double rsq = computeValue(traj, 0);
+			if (rsq < 1.27*1.27) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		bool hB(TpsTrajectory& traj)
+		{
+			int last_timeslice = traj.getNumberOfTimeslices()-1;
+			double rsq = computeValue(traj, last_timeslice);
+			if (rsq > 1.47*1.47) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		//This function is not necessary for defining an order parameter, it is 
+		//just used in this code to get the distance between the diatomic atoms
+		double computeValue(TpsTrajectory& traj, int timeslice_number)
+		{
+			TpsDataAtomicPositions x_data; 
+			getData(traj, timeslice_number, x_data);
+			TpsDataAtomicBoundary boundary_data;
+			getData(traj, timeslice_number, boundary_data);
+			
+			std::vector< std::vector<double> >& x = x_data.getPositions();
+			std::vector<double>& period = boundary_data.getPeriod();
+			std::vector<bool>& periodic = boundary_data.getPeriodicity();
+
+			double rsq = 0.0;
+			int dim = x[0].size();
+			for (unsigned int k=0; k<dim; k++) {
+				double dx = x[0][k] - x[1][k];
+				if (periodic[k]) {
+					dx -= period[k]*rint(dx/period[k]);
+				}
+				rsq += dx*dx;
+			}
+			return rsq;
+		}		
+};
+
+//now the easy part: write the main code:
+int main()
+{
+	//Initialize a LAMMPS simulation of the double-well system
+	TpsSimulationPluginLAMMPS lmp;
+	lmp.readInputScript("input.double_well");
+
+	//Use a unix rand48 random number generator, seed 10, 7, 13
+	TpsRNG48 rng(10, 7, 13);
+
+	//Use random-spaced trajectories of length 1000 step size rand [0,50]
+	TpsTrajectoryRandomStep trj(lmp, rng, 1000, 50);
+	TpsTrajectoryEnsemble trj_fac(trj);
+			
+	//Use a brute force scheme to create the initial trajectory
+	TpsInitializerBruteForce init;
+
+	//Use our special class derived above as an order parameter
+	TpsOrderParameterDiatomicBondLength bond_length;
+
+	//Initialize the TPS algorithm
+	TpsAlgorithmTPS tps(trj_fac, rng, bond_length, init);
+
+	//Add a shooting move with velocity perturbations
+	TpsTimesliceModifierAtomicVelocitiesNVE dv(0.0001, 1.0, 1);
+	TpsTrialMoveShot shot(dv);
+	tps.addTrialMove(shot);
+	
+	//Add a shifting move with min shift 50, max shift 400
+	TpsTrialMoveShift shift(50, 400);
+	tps.addTrialMove(shift);
+
+	//Write an XYZ file whenever a new trajectory is created (% = trajectory #)
+	TpsAnalysisWriteXYZAtomic writer("traj%.xyz");
+	TpsExtraAnalyzeTrajectory a(writer);
+	tps.addExtra(a);
+
+	//Do 100 path sampling MC steps
+	for (int i=0; i<100; i++) {
+		tps.doStep();
+	}
+}
+\endcode
+
+We can view the trajectories in VMD:
+
+\image html "double_well2.jpg"
+
+We can see from viewing the trajectory files that each trajectory starts 
+in state A, where the two atoms are close together and ends in state B, where
+the two atoms are far apart. 
+
+\section diatomic_python Python Version
+
+Now lets do the same example in python:
+\code
+#import the tps library
+from tps import *
+
+#We can derive from the TpsOrder parameter class in python as well:
+class TpsOrderParameterDiatomicBondLength(TpsOrderParameter):
+	"a specialized order parameter"
+	def __init__(self):
+		TpsOrderParameter.__init__(self)
+		
+	def hA(self, traj) :
+
+		rsq = self.computeValue(traj, 0)
+		if rsq < 1.27*1.27 :
+			return True
+		else :
+			return False
+		
+	def hB(self, traj) :
+
+		last_timeslice = traj.getNumberOfTimeslices()-1
+		rsq = self.computeValue(traj, last_timeslice)
+		print "HB ", sqrt(rsq)
+		
+		if rsq > 1.47*1.47 :
+			return True
+		else :
+			return False
+
+	def computeValue(self, traj, timeslice_number) :
+
+		x_data = TpsDataAtomicPositions()
+		self.getData(traj, timeslice_number, x_data)
+		boundary_data = TpsDataAtomicBoundary()
+		self.getData(traj, timeslice_number, boundary_data)
+		
+		x = x_data.getPositions()
+		period = boundary_data.getPeriod()
+		periodic = boundary_data.getPeriodicity()
+
+		rsq = 0.0
+		dim = len(x[0])
+		for k in range (0,dim):
+			dx = x[0][k] - x[1][k]
+			if periodic[k] :
+				dx -= period[k]*round(dx/period[k])
+			rsq += dx*dx;
+		return rsq
+
+
+
+#Initialize a LAMMPS simulation of the double-well system
+lmp = TpsSimulationPluginLAMMPS()
+lmp.readInputScript("input.dblwell")
+
+#Use uniformily-spaced trajectories of length 1000 step size 50
+trj = TpsTrajectoryUniformStep(lmp, 1000, 50)
+trj_fac = TpsTrajectoryEnsemble(trj)
+
+#Use a brute force scheme to create the initial trajectory
+init = TpsInitializerBruteForce()
+
+#Use the the bond length between atoms 0 and 1 as an order parameter
+bond_length = TpsOrderParameterDiatomicBondLength()
+
+#Use a unix rand48 random number generator
+rng = TpsRNG48()
+
+#Initialize the TPS algorithm
+tps = TpsAlgorithmTPS (trj_fac, rng, bond_length, init)
+
+#Add a shooting move with velocity perturbations
+dv = TpsTimesliceModifierAtomicVelocitiesNVE(0.0001, 1.0, 1)
+shot = TpsTrialMoveShot(dv)
+tps.addTrialMove(shot)
+
+#Add a shifting move with min shift 50, max shift 400
+shift = TpsTrialMoveShift(50, 400)
+tps.addTrialMove(shift)
+
+#Write an XYZ file whenever a new trajectory is created
+writer = TpsAnalysisWriteXYZAtomic("traj%.xyz")
+a = TpsExtraAnalyzeTrajectory(writer)
+tps.addExtra(a)
+
+#Do 100 path sampling MC steps
+for i in range(1, 100):
+	tps.doStep()
+
+\endcode
+
+
+
+*/

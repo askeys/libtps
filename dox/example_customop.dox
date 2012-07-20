@@ -1,0 +1,250 @@
+
+/**
+\page example_customop Adding a Custom Order Parameter
+
+Most TPS applications require that we create a specialized order parameter for
+the problem at hand.  An example of some custom TPS order parameters are
+given below:
+
+\code
+//Order parameters for the single particle in 2D potential field example:
+
+//Order parameter 1: x position
+class TpsOrderParameterXPosition : public TpsOrderParameter
+{
+	public:
+		bool hA(TpsTrajectory& traj)
+		{
+			double x = evaluate(traj, 0);
+			if (x > mean_xA - stdev_xA && x < mean_xA + stdev_xA) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		bool hB(TpsTrajectory& traj)
+		{
+			int last_timeslice = traj.getNumberOfTimeslices()-1;
+			double x = evaluate(traj, last_timeslice);
+			if (x > mean_xB - stdev_xB && x < mean_xB + stdev_xB) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+
+		double evaluate(TpsTrajectory& traj, int timeslice_number)
+		{
+			TpsDataAtomicPositions x_data;
+			//The following is a general way to get the coordinates from an
+			//atomic simulation.  There are other ways to do this which are
+			//less general, such as getting data directly from the simulation
+			//class.  This topic is covered in the "generality" example.
+			getData(traj, timeslice_number, x_data);
+			vector< vector<double> >& x_array = x_data.getPositions();			
+			return x_array[0][0];
+		}		
+};
+
+//Order parameter 2: the y position
+class TpsOrderParameterYPosition : public TpsOrderParameter
+{
+	public:
+		bool hA(TpsTrajectory& traj)
+		{
+			double y = evaluate(traj, 0);
+			if (y > mean_yA - stdev_yA && y < mean_yA + stdev_yA) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		bool hB(TpsTrajectory& traj)
+		{
+			int last_timeslice = traj.getNumberOfTimeslices()-1;
+			double y = evaluate(traj, last_timeslice);			
+			if (y > mean_yB - stdev_yB && y < mean_yB + stdev_yB) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+
+		double evaluate(TpsTrajectory& traj, int timeslice_number)
+		{
+			TpsDataAtomicPositions x_data; 
+			//The following is a general way to get the coordinates from an
+			//atomic simulation.  There are other ways to do this which are
+			//less general, such as getting data directly from the simulation
+			//class.  This topic is covered in the "generality" example.
+			getData(traj, timeslice_number, x_data);
+			vector< vector<double> >& x_array = x_data.getPositions();			
+			return x_array[0][1];
+		}		
+};
+
+\endcode
+
+\section example_customops2 Combining Order Parameters
+
+We can create an overall order parameter as an aggregate of several smaller 
+order parameters.  This is useful if we want to create a complex order parameter
+but maintain the individuality of each of its parts (for example, for plotting
+the committer, etc.).
+
+\code
+TpsOrderParameterXPosition xpos;
+TpsOrderParameterYPosition ypos;
+TpsOrderParameterAggregate xypos;
+//combined order parameter xypos is an aggregate of xpos and ypos:
+xypos.addOrderParameter(xpos);
+xypos.addOrderParameter(ypos);
+\endcode
+
+\section example_customops1 Example Code
+
+An example of this order parameter being used in a working code is given below.
+
+\code
+#include <tps/tps.h>
+#include <tps/TestSystems/TpsTestPeSurf2dBD.h>
+#include <cmath>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
+using namespace std;
+
+#define mean_xA		-1.03528
+#define stdev_xA	(0.177083 * 2)
+#define mean_yA		-0.0417531
+#define stdev_yA	(0.149455 * 2)
+
+#define mean_xB		1.0026
+#define stdev_xB	(0.191586 * 2)
+#define mean_yB		0.118493
+#define stdev_yB	(0.167281 * 2)
+
+//Order parameter 1: x position
+class TpsOrderParameterXPosition : public TpsOrderParameter
+{
+	public:
+		bool hA(TpsTrajectory& traj)
+		{
+			double x = evaluate(traj, 0);
+			if (x > mean_xA - stdev_xA && x < mean_xA + stdev_xA) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		bool hB(TpsTrajectory& traj)
+		{
+			int last_timeslice = traj.getNumberOfTimeslices()-1;
+			double x = evaluate(traj, last_timeslice);
+			if (x > mean_xB - stdev_xB && x < mean_xB + stdev_xB) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+
+		double evaluate(TpsTrajectory& traj, int timeslice_number)
+		{
+			TpsDataAtomicPositions x_data;
+			//The following is a general way to get the coordinates from an
+			//atomic simulation.  There are other ways to do this which are
+			//less general, such as getting data directly from the simulation
+			//class.  This topic is covered in the "generality" example.
+			getData(traj, timeslice_number, x_data);
+			vector< vector<double> >& x_array = x_data.getPositions();			
+			return x_array[0][0];
+		}		
+};
+
+//Order parameter 2: the y position
+class TpsOrderParameterYPosition : public TpsOrderParameter
+{
+	public:
+		bool hA(TpsTrajectory& traj)
+		{
+			double y = evaluate(traj, 0);
+			if (y > mean_yA - stdev_yA && y < mean_yA + stdev_yA) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+		
+		bool hB(TpsTrajectory& traj)
+		{
+			int last_timeslice = traj.getNumberOfTimeslices()-1;
+			double y = evaluate(traj, last_timeslice);			
+			if (y > mean_yB - stdev_yB && y < mean_yB + stdev_yB) {
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+
+		double evaluate(TpsTrajectory& traj, int timeslice_number)
+		{
+			TpsDataAtomicPositions x_data; 
+			//The following is a general way to get the coordinates from an
+			//atomic simulation.  There are other ways to do this which are
+			//less general, such as getting data directly from the simulation
+			//class.  This topic is covered in the "generality" example.
+			getData(traj, timeslice_number, x_data);
+			vector< vector<double> >& x_array = x_data.getPositions();			
+			return x_array[0][1];
+		}		
+};
+
+int main()
+{
+	TpsTestPeSurf2dBD sim;
+	sim.setTemperature(1.0/2.0);
+	sim.setDragCoefficient(2.5);
+	sim.setTimestep(0.25);
+	sim.setParticlePosition(-1, 0);
+	
+	TpsRNG48 rng(10, 7, 13);
+	
+	TpsOrderParameterXPosition xpos;
+	TpsOrderParameterYPosition ypos;
+	TpsOrderParameterAggregate xypos;
+	xypos.addOrderParameter(xpos);
+	xypos.addOrderParameter(ypos);
+	
+	TpsInitializerBruteForce init;
+	TpsTrajectoryUniformStep trj(sim, 100, 1);
+	TpsTrajectoryEnsemble tpe(trj);
+
+	TpsAlgorithmTPS tps(tpe, rng, xypos, init);
+
+	TpsTrialMoveShotForward fshot;
+	TpsTrialMoveShotBackward bshot;
+	TpsTrialMoveShift shift(1, 99);
+	tps.addTrialMove(fshot);
+	tps.addTrialMove(bshot);
+	tps.addTrialMove(shift);
+	
+	for (int i=0; i<200; i++) {
+		tps.doStep();
+	}
+}
+
+\endcode
+
+*/

@@ -1,0 +1,11 @@
+/** \page developers For Developers
+
+To get the current version of the code, or to become 
+ a developer, visit out track site: 
+  - http://matforge.org/mol_sim_api.
+
+Our path sampling API aims to encompass all of the various path sampling
+algorithms published to date.  The style of the path sampling API is meant to 
+be similar to the Molecular Simulation API that is currently under development 
+as part of the larger project.  For more detals, see \subpage design.
+*/

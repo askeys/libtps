@@ -1,0 +1,340 @@
+/**
+\page example_customsim Adding a Custom Simulation
+
+Often, we want to use the LibTPS classes with our own custom molecular 
+simulation codes.  Although this can be a bit complicated, we can do so by
+implementing the required member functions in the TpsPlugin family of classes.
+
+Which TpsPlugin we implement depends on the type of simulation that we have.
+In this example, we assume that we have a various atomic simulations 
+(consisting of atoms with positions, velocities, forces, etc.)
+
+\section example_customsimMC Example: MC simulation
+
+In this example, we implement a canonical Monte-Carlo simulation with a single 
+atom in a 2D potential field.
+
+\code
+
+#include <iostream>
+#include <string>
+#include <map>
+
+//A helper struct for use in our class (specific to this example)
+struct Timeslice
+{
+	double x[2];
+};
+
+//Since the simulation contains an "atom" with a real-space position, 
+//we shouly derive our simulation class from TpsSimulationPluginAtomic:
+class SimulationPluginMC : public TpsSimulationPluginAtomic
+{
+	public:	
+		//The following functions must be defined. By defining these functions,
+		//the C++ compiler knows to overwrite the functions with the same names
+		//int the base class TpsSimulationPlugin.  This is how our custom 
+		//simulation code works with the path sampling library
+		//------------------------
+		
+		void run(int nsteps)
+		{
+			for (int i=0; i<nsteps; i++) {
+				double dx = _rng.randNormal(0.0, _xstdev);
+				double dy = _rng.randNormal(0.0, _xstdev);
+								
+				double energy_old = computeHamiltonian();  
+				double x_old = _current_timeslice.x[0];
+				double y_old = _current_timeslice.x[1];
+
+				_current_timeslice.x[0] += dx;
+				_current_timeslice.x[1] += dy;
+
+				double energy_trial = computeHamiltonian();
+				double deltaH = -_beta*(energy_trial-energy_old);
+				if (exp(deltaH) < _rng.randDouble()) { 
+					_current_timeslice.x[0] = x_old;
+					_current_timeslice.x[1] = y_old;
+				}
+				_moves_accepted++;
+			}
+			_moves_attempted += nsteps;
+		}
+				
+		void writeRestart(const char* filename)
+		{
+			std::string timeslice_name = filename;
+			_saved_timeslices[timeslice_name] = _current_timeslice;
+		}
+		
+		void readRestart(const char* filename)
+		{			
+			std::string timeslice_name = filename;
+			_current_timeslice = _saved_timeslices[timeslice_name];
+		}
+		
+		virtual void freeRestart(const char* filename)
+		{
+			std::string timeslice_name = filename;
+			_saved_timeslices.erase(timeslice_name);
+		}
+		
+		virtual void copyRestart(const char* src_file, const char* dest_file)
+		{
+			std::string name1 = src_file;
+			std::string name2 = dest_file;
+			
+			_saved_timeslices[name2] = _saved_timeslices[name1];
+		}
+		
+		double computeHamiltonian()
+		{
+			double x, y, x2, y2, v,ke;
+
+			x = _current_timeslice.x[0];
+			y = _current_timeslice.x[1];
+
+			x2 = x*x;
+			y2 = y*y;
+
+			v = (2./15) *exp (-2 - 4 * y) -
+			exp (-(x-1)*(x-1)-y2) - exp(-(x+1)*(x+1)-y2) +
+			5*exp(-0.32*(x2 + y2 +20*(x+y)*(x+y))) + (32./1875)*(x2*x2 +y2*y2);
+			
+			return v;
+		}
+		
+		double getExpectedTemperature()
+		{
+			return 1.0 / _beta;
+		}
+		
+		double setTemperature(double temp)
+		{
+			_beta = 1.0 / temp;
+		}
+		
+		double getAcceptanceProbability()
+		{
+			return _moves_accepted / (double)_moves_attempted;
+		}
+		
+		//------------------------
+		//everything defined below this point is not required to
+		//implement TpsSimulationPlugin
+		// a constructor to initialize some default values
+		SimulationPluginMC()
+		{
+			//these member variables are inherited from the base class:
+			_dim = 2;
+			_natom = 1;
+			_x.push_back(&_current_timeslice.x[0]);
+			_type.push_back(0);
+			
+			_xstdev = 0.1;
+			_beta = 1.0;
+			_moves_accepted = _moves_attempted = 0;
+			_current_timeslice.x[0] = 2;
+			_current_timeslice.x[1] = 2;
+		}
+		
+		void setStepSize(double xstdev)
+		{
+			_xstdev = xstdev;
+		}
+		
+		Timeslice& getCurrentTimeslice()
+		{
+			return _current_timeslice;
+		}
+		
+	private:
+		double _beta;
+		double _xstdev;
+		TpsRNG48 _rng;
+		int _moves_accepted, _moves_attempted;
+		Timeslice _current_timeslice;
+		std::map<std::string, Timeslice> _saved_timeslices;				
+};
+
+\endcode
+
+\section example_custosimMD Example: MD simulation
+
+In this example, we implement an NVE MD simulation with a single atom in 
+a 2D potential field.  We see that it is very similar to our MC simulation,
+but includes a few extra functions.
+
+\code
+#include <iostream>
+#include <string>
+#include <map>
+
+struct Timeslice 
+{
+	double x[2];
+	double v[2];
+	double f[2];
+	short int _seed[3];
+};
+
+
+//Since the simulation contains an "atom" with a real-space position, 
+//we shouly derive our simulation class from TpsSimulationPluginAtomic:
+class SingleParticleSimulationNVEMD : public TpsSimulationPluginAtomic
+{
+	public:	
+		//The following functions must be defined. By defining these functions,
+		//the C++ compiler knows to overwrite the functions with the same names
+		//int the base class TpsSimulationPlugin.  This is how our custom 
+		//simulation code works with the path sampling library
+		//------------------------
+		
+		void run(int nsteps)
+		{
+			for (int i=0; i<nsteps; i++) {
+				verlet(_current_timeslice);
+			}
+		}
+		
+		void invertVelocities()
+		{
+			_current_timeslice.v[0] = -_current_timeslice.v[0];
+			_current_timeslice.v[1] = -_current_timeslice.v[1];
+		}
+		
+		void writeRestart(const char* filename)
+		{
+			std::string timeslice_name = filename;
+			_saved_timeslices[timeslice_name] = _current_timeslice;
+		}
+		
+		void readRestart(const char* filename)
+		{			
+			std::string timeslice_name = filename;
+			_current_timeslice = _saved_timeslices[timeslice_name];
+		}
+		
+		virtual void freeRestart(const char* filename)
+		{
+			std::string timeslice_name = filename;
+			_saved_timeslices.erase(timeslice_name);
+		}
+		
+		virtual void copyRestart(const char* src_file, const char* dest_file)
+		{
+			std::string name1 = src_file;
+			std::string name2 = dest_file;
+			
+			_saved_timeslices[name2] = _saved_timeslices[name1];
+		}
+		
+		double computeHamiltonian()
+		{
+			return totalEnergy(_current_timeslice);
+		}
+		
+		double getExpectedTemperature()
+		{
+			std::cerr << "Warning: this is an NVE MD simulation, you shouldn't";
+			std::cerr << " be using trial moves that require calculation of ";
+			std::cerr << "the temperature\n";
+			return 0.0;
+		}
+		
+		//------------------------
+		//everything defined below this point is not required...
+		
+		SingleParticleSimulationNVEMD()
+		{
+			//these member variables are inherited from the base class:
+			_dim = 2;
+			_natom = 1;
+			_x.push_back(&_current_timeslice.x[0]);
+			_v.push_back(&_current_timeslice.v[0]);
+			_type.push_back(0);
+			
+			_dt = 0.025;
+			_current_timeslice.x[0] = 2;
+			_current_timeslice.x[1] = 2;
+			_current_timeslice.v[0] = 0;
+			_current_timeslice.v[1] = 0;
+		}
+		
+		void setTimestep(double dt)
+		{
+			_dt = dt;
+		}
+		
+		Timeslice& getCurrentTimeslice()
+		{
+			return _current_timeslice;
+		}
+		
+	private:
+		
+		double _dt;
+		Timeslice _current_timeslice;
+		std::map<std::string, Timeslice> _saved_timeslices;
+		
+		void verlet(Timeslice& m)
+		{
+			double dt2 = 0.5 *_dt;
+
+			m.v[0] +=  dt2 * m.f[0];
+			m.v[1] +=  dt2 * m.f[1];     
+			m.x[0]  +=  _dt * m.v[0];
+			m.x[1]  +=  _dt * m.v[1];
+			forces(m.x[0], m.x[1], m.f[0], m.f[1]);
+			m.v[0] +=  dt2* m.f[0];
+			m.v[1] +=  dt2* m.f[1];
+
+			return;
+		}
+
+		
+		void forces(double x, double y, double& fx, double& fy) 
+		{
+			double x2, y2, v,xpy2, expo1, expo2, expo3;
+
+			x2 = x*x;
+			y2 = y*y;
+			xpy2 =(x+y)*(x+y);
+
+			expo1 = exp(-(x-1)*(x-1)-y2);
+			expo2 = exp(-(x+1)*(x+1)-y2);
+			expo3 = exp(-0.32*(x2 + y2 +20*xpy2));
+
+			fx = -( 2 * (x-1) * expo1 + 2 * (x+1) * expo2 - 
+				1.6 * expo3 * (2*x+40*(x+y)) + (128./1875)*x*x2);
+
+
+			fy = -(2 * y * expo1 + 2 * y * expo2 - 
+				1.6 * expo3* (2*y+40*(x+y)) + (128./1875)*y*y2 -
+				(8./15)*exp(-2- 4*y));
+			  
+			return;
+		}
+		
+		double totalEnergy(Timeslice& m) 
+		{
+			double x, y, x2, y2, v,ke;
+
+			x = m.x[0];
+			y = m.x[1];
+
+			x2 = x*x;
+			y2 = y*y;
+
+			v = (2./15) *exp (-2 - 4 * y) -
+			exp (-(x-1)*(x-1)-y2) - exp(-(x+1)*(x+1)-y2) +
+			5*exp(-0.32*(x2 + y2 +20*(x+y)*(x+y))) + (32./1875)*(x2*x2 +y2*y2);
+
+			ke = 0.5*(m.v[0]*m.v[0] +m.v[1]*m.v[1]);
+
+			return ke + v;
+		}
+};
+\endcode
+
+*/

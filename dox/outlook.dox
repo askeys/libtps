@@ -1,0 +1,23 @@
+/** \page outlook Future Outlook
+
+\section future_sec Future Outlook
+The overall goal of our cyberinfrastructure project is to create several
+specialized simulation and analysis libraries like LibTPS that work 
+together with a molecular simulation API called the "Etomica API." Etomica
+handles interfacing with the molecular simulations so that the libraries don't
+have to.  Thus, a library such as LibTPS needs only to connect with Etomica to 
+access all of the simulation codes contained within the API.  This is good news,
+since it can be a bit difficult and time consuming to wrap complicated 
+simulation codes into LibTPS simulation plugins (for an example, see our 
+LAMMPS wrapper, which consists of ~500 lines of C++ code for an example).
+
+With this in mind, a very important goal for the future of our LibTPS 
+project is to make the library API-compliant.  At the present time, the 
+Etomica API is incomplete and has limited functionality, and therefore has not
+yet been implemented.  We plan to implement a simulation plugin for the API as
+soon as the classes are finalized.  Within the next few years, the API will 
+provide an interface to every standard simulation code (LAMMPS, NAMD, HOOMD, 
+Towhee, etc.). As more simulation codes and functionality are implemented in the 
+future, the simulation capabilities of LibTPS will expand dramatically.  
+
+*/

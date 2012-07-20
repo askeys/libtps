@@ -1,0 +1,13 @@
+/**
+	\defgroup core Core API
+	\defgroup alg Path Sampling Algorithms
+	\defgroup trial_move TPS Trial Moves
+	\defgroup sim Simulation Plugins
+	\defgroup init Reactive Path Initializers
+	\defgroup orderparam Order Parameter Related
+	\defgroup traj Trajectory Related
+	\defgroup analysis Transition Path Analysis
+	\defgroup rng Random Number Generators
+	\defgroup testsuite Test Suite
+    \defgroup extensions Extensions
+*/

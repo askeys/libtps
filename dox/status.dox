@@ -1,0 +1,22 @@
+/** \page status Current Status
+
+\section status_sec Current Status
+
+Currently, we have implemented Transition Path Sampling (TPS) and related 
+methods, such as Transition Interface Sampling (TIS) and Aimless Shooting.  
+Additionally, we have implemented several model systems to facilitate comparing 
+results and testing new algorithms.  We currently supply built-in support for 
+LAMMPS and some prototype simulations for testing, although the library can 
+be used with any molecular simulation code written in either C/C++, Java or 
+python.  The source code for the library is available at matforge.org. 
+
+Much of the infrastructure for the code is already in place (core API, 
+cross-platform abilities, etc.)  However, before we release a beta version,
+there are several fixes / additions that must be addressed:
+- Interface sampling not yet added fully tested / added to the trunk 
+- Lattice/Molecular simulations not yet supported
+- No minimal protein model (beta hairpin folding?)
+- No minimal lattice mode (ising nucleation?)
+- Future integration with Etomica API required for full functionality (see below)
+
+*/
