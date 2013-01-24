@@ -55,6 +55,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstdlib>
 #include <sstream>
 #include <sys/stat.h>
+#include <unistd.h>
 
 int TpsTrajectoryEnsemble::_s_unique_ID = 0;
 
